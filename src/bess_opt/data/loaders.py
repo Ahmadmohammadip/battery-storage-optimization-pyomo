@@ -34,20 +34,33 @@ def load_price_series_csv(path: str | Path, delta_t: float = 1.0) -> PriceSeries
     path = Path(path)
     with path.open(newline="", encoding="utf-8-sig") as handle:
         rows = list(csv.DictReader(handle))
+    return _price_series_from_rows(rows, path.name, delta_t)
 
+
+def load_price_series_text(
+    text: str, label: str = "uploaded.csv", delta_t: float = 1.0
+) -> PriceSeries:
+    """Same as `load_price_series_csv`, for CSV content already in memory —
+    an uploaded file in the Streamlit app, for instance. `label` only appears
+    in error messages."""
+    rows = list(csv.DictReader(text.lstrip("﻿").splitlines()))
+    return _price_series_from_rows(rows, label, delta_t)
+
+
+def _price_series_from_rows(rows: list[dict], label: str, delta_t: float) -> PriceSeries:
     if not rows:
-        raise ValueError(f"{path.name}: file has a header but no data rows")
+        raise ValueError(f"{label}: file has a header but no data rows")
 
     columns = rows[0].keys()
     if ENERGY_COLUMN not in columns:
         raise ValueError(
-            f"{path.name}: missing required column '{ENERGY_COLUMN}' "
+            f"{label}: missing required column '{ENERGY_COLUMN}' "
             f"(found: {sorted(c for c in columns if c)})"
         )
 
-    energy = _column(rows, ENERGY_COLUMN, path)
-    reg_up = _column(rows, REG_UP_COLUMN, path) if REG_UP_COLUMN in columns else None
-    reg_down = _column(rows, REG_DOWN_COLUMN, path) if REG_DOWN_COLUMN in columns else None
+    energy = _column(rows, ENERGY_COLUMN, label)
+    reg_up = _column(rows, REG_UP_COLUMN, label) if REG_UP_COLUMN in columns else None
+    reg_down = _column(rows, REG_DOWN_COLUMN, label) if REG_DOWN_COLUMN in columns else None
 
     return PriceSeries(energy=energy, reg_up=reg_up, reg_down=reg_down, delta_t=delta_t)
 
@@ -100,16 +113,16 @@ def load_system_json(path: str | Path) -> System:
     )
 
 
-def _column(rows: list[dict], name: str, path: Path) -> list[float]:
+def _column(rows: list[dict], name: str, label: str) -> list[float]:
     values = []
     for line_number, row in enumerate(rows, start=2):  # row 1 is the header
         raw = row.get(name)
         if raw is None or raw.strip() == "":
-            raise ValueError(f"{path.name} line {line_number}: empty value in column '{name}'")
+            raise ValueError(f"{label} line {line_number}: empty value in column '{name}'")
         try:
             values.append(float(raw))
         except ValueError as exc:
             raise ValueError(
-                f"{path.name} line {line_number}: column '{name}' is not a number ({raw!r})"
+                f"{label} line {line_number}: column '{name}' is not a number ({raw!r})"
             ) from exc
     return values

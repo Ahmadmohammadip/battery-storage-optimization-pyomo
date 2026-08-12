@@ -5,7 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from bess_opt.data.loaders import load_price_series_csv, load_system_json
+from bess_opt.data.loaders import (
+    load_price_series_csv,
+    load_price_series_text,
+    load_system_json,
+)
 
 SAMPLE_DIR = Path(__file__).resolve().parents[1] / "data" / "sample_price_series"
 
@@ -73,6 +77,44 @@ def test_header_only_file_is_rejected(tmp_path):
 
     with pytest.raises(ValueError, match="no data rows"):
         load_price_series_csv(path)
+
+
+def test_loads_price_series_from_text():
+    # This is the path the Streamlit app's file uploader takes: CSV content
+    # already in memory, never written to disk.
+    text = "period,energy_price,reg_up_price\n1,10,4\n2,50,4\n"
+
+    prices = load_price_series_text(text)
+
+    assert prices.energy == [10.0, 50.0]
+    assert prices.reg_up == [4.0, 4.0]
+    assert prices.reg_down == [0.0, 0.0]
+
+
+def test_text_loader_tolerates_a_byte_order_mark():
+    # Spreadsheet exports routinely start with a BOM; without stripping it the
+    # first column name would be "﻿period" and the energy column would
+    # look missing.
+    text = "﻿period,energy_price\n1,10\n2,50\n"
+
+    prices = load_price_series_text(text)
+
+    assert prices.energy == [10.0, 50.0]
+
+
+def test_text_loader_reports_its_label_in_errors():
+    with pytest.raises(ValueError, match="my_upload.csv: missing required column"):
+        load_price_series_text("period,foo\n1,2\n", label="my_upload.csv")
+
+
+def test_text_and_file_loaders_agree():
+    path = SAMPLE_DIR / "day_hourly.csv"
+    from_file = load_price_series_csv(path)
+    from_text = load_price_series_text(path.read_text(encoding="utf-8-sig"))
+
+    assert from_text.energy == from_file.energy
+    assert from_text.reg_up == from_file.reg_up
+    assert from_text.reg_down == from_file.reg_down
 
 
 def _battery_config() -> dict:
