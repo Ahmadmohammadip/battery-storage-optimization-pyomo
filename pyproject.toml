@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bess-opt"
+version = "0.1.0"
+description = "Battery energy storage optimization: energy arbitrage co-optimized with frequency regulation capacity — built with Pyomo"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Ahmad" }]
+keywords = ["optimization", "energy-storage", "battery", "pyomo", "arbitrage", "frequency-regulation"]
+
+dependencies = [
+    "pyomo>=6.7",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+solvers = [
+    "highspy>=1.7",
+]
+viz = [
+    "matplotlib>=3.8",
+    "streamlit>=1.35",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[project.urls]
+Repository = "https://github.com/Ahmadmohammadip/battery-storage-optimization-pyomo"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
