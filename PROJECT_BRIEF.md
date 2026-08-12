@@ -205,3 +205,48 @@ This brief was authored directly in this conversation (not reconstructed
 or transcribed from an external source) as a planning document, before
 any code was written. It is the complete specification agreed on so far —
 nothing here should be treated as already-implemented.
+
+## 7. Decisions made after this brief
+Everything above is preserved as written, as the record of what was agreed
+before implementation started. The following four decisions were taken
+afterwards and **supersede** it where they conflict. `docs/formulation.md`
+describes what the code actually does.
+
+### 7.1 Terminal SOC constraint added (changes §1.5)
+The formulation now requires the horizon to be energy-neutral:
+
+$$e_T = SOC_0$$
+
+Section 1.5 has no such constraint. Without it, under perfect foresight,
+energy left in the battery at the end has no value, so the model always
+drains to $\underline{E}$ in the final periods — inflating reported profit
+by the value of the opening charge and making the tail of every schedule an
+artifact of where the horizon stops. The constraint is always feasible
+(holding still satisfies it), so it cannot make a well-formed system
+infeasible. Full rationale in `docs/formulation.md` §5.4.
+
+### 7.2 Repo name
+`battery-storage-optimization-pyomo`, as suggested in §5. The working
+directory was renamed to match.
+
+### 7.3 Public from commit 1 → public at completion (changes §5)
+All seven phases were built and committed locally, then pushed as a
+complete history to a new public repo. The phase-per-commit convention and
+commit-message prefixes in §5 were kept; only the timing of publication
+changed.
+
+### 7.4 Tests run locally, not only in CI
+A Python 3.12 virtualenv is used for local verification (`pytest`, `ruff`,
+and executing the notebook) rather than relying on CI as the first place the
+suite runs. Note that the `python` on PATH in the original environment was
+3.9, below this project's `requires-python = ">=3.10"`.
+
+### 7.5 Minor additions not specified in §2
+- `tests/test_schema_validation.py` and `tests/test_viz.py` beyond the four
+  test files listed in §2, and `tests/conftest.py` to select matplotlib's
+  Agg backend.
+- `data/sample_price_series/generate_series.py`, the deterministic generator
+  for the sample CSVs, committed so the synthetic data's shape is
+  inspectable.
+- `load_price_series_text()` alongside the path-based loader, so the
+  Streamlit app can parse an uploaded file without a temp file.
