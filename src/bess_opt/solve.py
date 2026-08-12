@@ -53,10 +53,18 @@ def solve_bess(model: ConcreteModel, solver_name: str = DEFAULT_SOLVER) -> Sched
     charge = {t: value(model.p_ch[t]) for t in periods}
     discharge = {t: value(model.p_dis[t]) for t in periods}
     soc = {t: value(model.soc[t]) for t in periods}
+    reg_up = {t: value(model.r_up[t]) for t in periods}
+    reg_down = {t: value(model.r_dn[t]) for t in periods}
 
     dt = value(model.dt)
     arbitrage_revenue = sum(
         dt * value(model.price_energy[t]) * (discharge[t] - charge[t]) for t in periods
+    )
+    # No dt factor: regulation pays per MW of capacity committed for the
+    # period, not per MWh delivered.
+    regulation_revenue = sum(
+        value(model.price_reg_up[t]) * reg_up[t] + value(model.price_reg_down[t]) * reg_down[t]
+        for t in periods
     )
 
     # Profit is the negated objective — the model minimizes -profit.
@@ -68,6 +76,9 @@ def solve_bess(model: ConcreteModel, solver_name: str = DEFAULT_SOLVER) -> Sched
         soc=soc,
         arbitrage_revenue=arbitrage_revenue,
         total_profit=total_profit,
+        reg_up=reg_up,
+        reg_down=reg_down,
+        regulation_revenue=regulation_revenue,
     )
 
 
