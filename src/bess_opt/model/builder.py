@@ -2,23 +2,22 @@
 Builds a Pyomo ConcreteModel for battery revenue stacking: energy arbitrage
 co-optimized with frequency regulation capacity.
 
-Phase 2 scope — arbitrage plus regulation capacity and the power headroom
-constraints that couple the two markets. The SOC headroom constraints
-(the deployment-fraction logic) arrive in phase 3; docs/formulation.md
-carries the full derivation.
+The complete formulation; docs/formulation.md carries the derivation.
 
-    max   sum_t dt * price_t * (p_dis_t - p_ch_t)          # energy
+    max   sum_t dt * price_t * (p_dis_t - p_ch_t)            # energy
         + sum_t (price_ru_t * r_up_t + price_rd_t * r_dn_t)  # capacity
     s.t.  p_dis_t + r_up_t <= P_dis_max
           p_ch_t  + r_dn_t <= P_ch_max
           e_t = e_{t-1} + eta_ch * p_ch_t * dt - (p_dis_t / eta_dis) * dt
           E_min <= e_t <= E_max
+          e_t + phi * r_dn_t * dt <= E_max
+          e_t - phi * r_up_t * dt >= E_min
           e_T = SOC_0
 
 Implemented as `minimize(-profit)` for consistency with the sibling
 `economic-dispatch-pyomo` repo, which minimizes cost.
 
-Two modeling points worth stating plainly:
+Three modeling points worth stating plainly:
 
 * Regulation is paid per MW of capacity *committed*, not per MWh delivered,
   so its revenue term carries no `dt` factor while the energy term does.
@@ -26,6 +25,10 @@ Two modeling points worth stating plainly:
   discharge that much more if called. That promise has to fit inside the
   same power rating as energy-market discharge, which is what makes this a
   single co-optimization rather than two independent problems.
+* Power headroom alone is not enough: the battery also needs the *energy* to
+  honor a call. The SOC headroom constraints reserve that energy, sized by
+  the deployment fraction `phi`. A nearly-empty battery cannot sell reg-up
+  no matter how much spare power rating it has.
 
 The terminal SOC constraint (`e_T = SOC_0`) is not in PROJECT_BRIEF.md
 section 1.5 — it was added afterwards. Without it, perfect foresight drains
@@ -82,6 +85,7 @@ def build_bess_model(system: System) -> ConcreteModel:
     m.eta_ch = Param(initialize=battery.charge_efficiency)
     m.eta_dis = Param(initialize=battery.discharge_efficiency)
     m.initial_soc = Param(initialize=battery.initial_soc)
+    m.phi = Param(initialize=system.phi)
 
     # --- Variables ---
     m.p_ch = Var(m.T, domain=NonNegativeReals, bounds=(0, battery.p_charge_max))
@@ -130,6 +134,20 @@ def build_bess_model(system: System) -> ConcreteModel:
         return m.soc[t] == prev_soc + m.eta_ch * m.p_ch[t] * m.dt - (m.p_dis[t] / m.eta_dis) * m.dt
 
     m.soc_con = Constraint(m.T, rule=_soc_rule)
+
+    # SOC headroom: enough stored energy (and enough empty space) to actually
+    # honor a regulation call, sized by the deployment fraction phi. phi is a
+    # labeled assumption, not any ISO's real deployment rules — see
+    # docs/formulation.md.
+    def _soc_headroom_up_rule(m, t):
+        return m.soc[t] - m.phi * m.r_up[t] * m.dt >= battery.energy_min
+
+    m.soc_headroom_up_con = Constraint(m.T, rule=_soc_headroom_up_rule)
+
+    def _soc_headroom_down_rule(m, t):
+        return m.soc[t] + m.phi * m.r_dn[t] * m.dt <= battery.energy_max
+
+    m.soc_headroom_down_con = Constraint(m.T, rule=_soc_headroom_down_rule)
 
     # Energy-neutral horizon — see module docstring.
     def _terminal_soc_rule(m):
