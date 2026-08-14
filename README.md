@@ -122,6 +122,19 @@ rules**. The deployment fraction `phi` is a clearly-labeled assumption used to
 size energy reserves, not an implementation of any real tariff. Full list with
 rationale in `docs/formulation.md`.
 
+## Companion repos
+
+Three standalone optimization models built to the same conventions — validated
+dataclasses that fail loudly at construction, a Pyomo builder that never touches
+raw files, and a result dataclass rather than a live model — but sharing no code.
+
+- [economic-dispatch-pyomo](https://github.com/Ahmadmohammadip/economic-dispatch-pyomo)
+  — multi-period, multi-bus DC-OPF economic dispatch with generator ramping,
+  curtailable renewables, storage, and locational marginal prices.
+- [cvrp-optimization-pyomo](https://github.com/Ahmadmohammadip/cvrp-optimization-pyomo)
+  — exact MILP for the Capacitated Vehicle Routing Problem, with a measured
+  benchmark of where exact methods stop scaling.
+
 ## License
 
 MIT — see `LICENSE`.
