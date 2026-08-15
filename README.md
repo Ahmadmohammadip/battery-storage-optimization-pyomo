@@ -70,6 +70,27 @@ print(result.soc[24])               # back where it started
 Set `include_regulation=False` on the `System` to run the same battery as a
 pure arbitrage case through the same builder.
 
+## What it produces
+
+```python
+from bess_opt.viz import plot_price_and_dispatch
+
+plot_price_and_dispatch(system, result).savefig("dispatch.png")
+```
+
+![Battery dispatch against the energy price on the sample day](docs/images/dispatch.png)
+
+The sample day, solved. Charging is drawn below the axis because it is power
+leaving the grid: the battery fills through the overnight trough and again
+through the midday dip where the price goes negative — being paid to consume —
+then sells into the morning ramp and the evening peak.
+
+The schedule ends at the state of charge it started from, so none of the profit
+comes from quietly selling off the opening charge.
+
+`plot_soc_trajectory` and `plot_revenue_stack` cover the state of charge and the
+split between arbitrage and regulation revenue.
+
 ## Repo layout
 
 ```
@@ -84,7 +105,7 @@ battery-storage-optimization-pyomo/
 ├── notebooks/01_walkthrough.ipynb
 ├── app/streamlit_app.py    # interactive demo
 ├── tests/
-├── docs/formulation.md
+├── docs/                   # formulation.md, images/
 └── .github/workflows/ci.yml
 ```
 
