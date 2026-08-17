@@ -145,20 +145,25 @@ rationale in `docs/formulation.md`.
 
 ## Companion repos
 
-Four standalone optimization models built to the same conventions — validated
+Five standalone optimization models built to the same conventions — validated
 dataclasses that fail loudly at construction, a Pyomo builder that never touches
 raw files, and a result dataclass rather than a live model — but sharing no code.
 
 - [economic-dispatch-pyomo](https://github.com/Ahmadmohammadip/economic-dispatch-pyomo)
-  — multi-period, multi-bus DC-OPF economic dispatch with generator ramping,
-  curtailable renewables, storage, and locational marginal prices.
+  — multi-period, multi-bus DC-OPF economic dispatch with generator
+  ramping, curtailable renewables, storage, and locational marginal prices.
 - [cvrp-optimization-pyomo](https://github.com/Ahmadmohammadip/cvrp-optimization-pyomo)
-  — exact MILP for the Capacitated Vehicle Routing Problem, with a measured
-  benchmark of where exact methods stop scaling.
+  — exact MILP for the Capacitated Vehicle Routing Problem, with a
+  measured benchmark of where exact methods stop scaling.
 - [supply-chain-network-optimization-pyomo](https://github.com/Ahmadmohammadip/supply-chain-network-optimization-pyomo)
   — multi-echelon network design and production-distribution-inventory
-  planning as one MILP: which plants and warehouses to open, and how to run
-  them.
+  planning as one MILP: which plants and warehouses to open, and how to
+  run them.
+- [forecast-driven-bess-dispatch](https://github.com/Ahmadmohammadip/forecast-driven-bess-dispatch)
+  — ML forecasts of load, PV and price feeding a Pyomo dispatch LP for a
+  behind-the-meter battery, measuring what the forecast is actually worth.
+  **The forecast-driven counterpart to this repo**: here the prices
+  are known, there they have to be predicted.
 
 ## License
 
